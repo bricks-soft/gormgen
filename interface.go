@@ -88,4 +88,5 @@ type Dao interface {
 	ScanRows(rows *sql.Rows, dest interface{}) error
 
 	WithSecCheckDisabled(disabled bool) Dao
+	AddError(err error) error
 }

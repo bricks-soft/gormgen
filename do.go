@@ -843,6 +843,10 @@ func (d DO) WithSecCheckDisabled(disabled bool) Dao {
 	return d.getInstance(d.db)
 }
 
+func (d *DO) AddError(err error) error {
+	return d.withError(err).underlyingDB().Error
+}
+
 func toColExprFullName(stmt *gorm.Statement, columns ...field.Expr) []string {
 	return buildColExpr(stmt, columns, field.WithAll)
 }
