@@ -183,6 +183,11 @@ func (e expr) Avg() Float64 {
 	return Float64{e.setE(clause.Expr{SQL: "AVG(?)", Vars: []interface{}{e.RawExpr()}})}
 }
 
+func (e expr) Percentile(fraction float64) Float64 {
+	// too many hardcoded opinions!
+	return Float64{e.setE(clause.Expr{SQL: "PERCENTILE_CONT(?) WITHIN GROUP (ORDER BY ? NULLS LAST)", Vars: []interface{}{fraction, e.RawExpr()}})}
+}
+
 func (e expr) Null() AssignExpr {
 	return e.setE(clause.Eq{Column: e.col.Name, Value: nil})
 }
