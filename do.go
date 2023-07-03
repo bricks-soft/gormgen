@@ -844,7 +844,7 @@ func (d DO) WithSecCheckDisabled(disabled bool) Dao {
 }
 
 func (d *DO) AddError(err error) error {
-	return d.withError(err).underlyingDB().Error
+	return d.underlyingDB().AddError(err)
 }
 
 func toColExprFullName(stmt *gorm.Statement, columns ...field.Expr) []string {
