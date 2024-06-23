@@ -49,11 +49,11 @@ func (q *Query) clone(db *gorm.DB) *Query {
 }
 
 func (q *Query) ReadDB() *Query {
-	return q.clone(q.db.Clauses(dbresolver.Read))
+	return q.ReplaceDB(q.db.Clauses(dbresolver.Read))
 }
 
 func (q *Query) WriteDB() *Query {
-	return q.clone(q.db.Clauses(dbresolver.Write))
+	return q.ReplaceDB(q.db.Clauses(dbresolver.Write))
 }
 
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
@@ -84,10 +84,14 @@ func (q *Query) Transaction(fc func(tx *Query) error, opts ...*sql.TxOptions) er
 }
 
 func (q *Query) Begin(opts ...*sql.TxOptions) *QueryTx {
-	return &QueryTx{q.clone(q.db.Begin(opts...))}
+	tx := q.db.Begin(opts...)
+	return &QueryTx{Query: q.clone(tx), Error: tx.Error}
 }
 
-type QueryTx struct{ *Query }
+type QueryTx struct {
+	*Query
+	Error error
+}
 
 func (q *QueryTx) Commit() error {
 	return q.db.Commit().Error
@@ -110,22 +114,22 @@ func (q *QueryTx) RollbackTo(name string) error {
 // QueryMethodTest query method test template
 const QueryMethodTest = `
 
-const dbName = "gen_test.db"
+const _gen_test_db_name = "gen_test.db"
 
-var db *gorm.DB
-var once sync.Once
+var _gen_test_db *gorm.DB
+var _gen_test_once sync.Once
 
 func init() {
 	InitializeDB()
-	db.AutoMigrate(&_another{})
+	_gen_test_db.AutoMigrate(&_another{})
 }
 
 func InitializeDB() {
-	once.Do(func() {
+	_gen_test_once.Do(func() {
 		var err error
-		db, err = gorm.Open(sqlite.Open(dbName), &gorm.Config{})
+		_gen_test_db, err = gorm.Open(sqlite.Open(_gen_test_db_name), &gorm.Config{})
 		if err != nil {
-			panic(fmt.Errorf("open sqlite %q fail: %w", dbName, err))
+			panic(fmt.Errorf("open sqlite %q fail: %w", _gen_test_db_name, err))
 		}
 	})
 }
@@ -143,15 +147,15 @@ type _another struct {
 func (*_another) TableName() string { return "another_for_unit_test" }
 
 func Test_Available(t *testing.T) {
-	if !Use(db).Available() {
+	if !Use(_gen_test_db).Available() {
 		t.Errorf("query.Available() == false")
 	}
 }
 
 func Test_WithContext(t *testing.T) {
-	query := Use(db)
+	query := Use(_gen_test_db)
 	if !query.Available() {
-		t.Errorf("query Use(db) fail: query.Available() == false")
+		t.Errorf("query Use(_gen_test_db) fail: query.Available() == false")
 	}
 
 	type Content string
@@ -170,9 +174,9 @@ func Test_WithContext(t *testing.T) {
 }
 
 func Test_Transaction(t *testing.T) {
-	query := Use(db)
+	query := Use(_gen_test_db)
 	if !query.Available() {
-		t.Errorf("query Use(db) fail: query.Available() == false")
+		t.Errorf("query Use(_gen_test_db) fail: query.Available() == false")
 	}
 
 	err := query.Transaction(func(tx *Query) error { return nil })

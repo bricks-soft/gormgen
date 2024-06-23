@@ -3,9 +3,9 @@ package gen
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,12 +33,19 @@ type T interface{}
 // M map[string]interface{}
 type M map[string]interface{}
 
+// SQLResult sql.result
+type SQLResult sql.Result
+
+// SQLRow sql.Row
+type SQLRow sql.Row
+
+// SQLRows sql.Rows
+type SQLRows sql.Rows
+
 // RowsAffected execute affected raws
 type RowsAffected int64
 
 var concurrent = runtime.NumCPU()
-
-func init() { runtime.GOMAXPROCS(runtime.NumCPU()) }
 
 // NewGenerator create a new generator
 func NewGenerator(cfg Config) *Generator {
@@ -176,7 +183,6 @@ func (g *Generator) genModelConfig(tableName string, modelName string, modelOpts
 			FieldWithTypeTag:  g.FieldWithTypeTag,
 
 			FieldJSONTagNS: g.fieldJSONTagNS,
-			FieldNewTagNS:  g.fieldNewTagNS,
 		},
 	}
 }
@@ -200,12 +206,12 @@ func (g *Generator) genModelObjConfig() *model.Config {
 	}
 }
 
-// ApplyBasic specify models which will implement basic method
+// ApplyBasic specify models which will implement basic .diy_method
 func (g *Generator) ApplyBasic(models ...interface{}) {
 	g.ApplyInterface(func() {}, models...)
 }
 
-// ApplyInterface specifies method interfaces on structures, implment codes will be generated after calling g.Execute()
+// ApplyInterface specifies .diy_method interfaces on structures, implment codes will be generated after calling g.Execute()
 // eg: g.ApplyInterface(func(model.Method){}, model.User{}, model.Company{})
 func (g *Generator) ApplyInterface(fc interface{}, models ...interface{}) {
 	structs, err := generate.ConvertStructs(g.db, models...)
@@ -382,7 +388,7 @@ func (g *Generator) generateSingleQueryFile(data *genInfo) (err error) {
 	}
 	err = render(tmpl.Header, &buf, map[string]interface{}{
 		"Package":        g.queryPkgName,
-		"ImportPkgPaths": importList.Add(structPkgPath).Add(getImportPkgPaths(data)...).Paths(),
+		"ImportPkgPaths": importList.Add(g.importPkgPaths...).Add(structPkgPath).Add(getImportPkgPaths(data)...).Paths(),
 	})
 	if err != nil {
 		return err
@@ -418,8 +424,8 @@ func (g *Generator) generateSingleQueryFile(data *genInfo) (err error) {
 		return err
 	}
 
-	defer g.info(fmt.Sprintf("generate query file: %s/%s.gen.go", g.OutPath, data.FileName))
-	return g.output(fmt.Sprintf("%s/%s.gen.go", g.OutPath, data.FileName), buf.Bytes())
+	defer g.info(fmt.Sprintf("generate query file: %s%s%s.gen.go", g.OutPath, string(os.PathSeparator), data.FileName))
+	return g.output(fmt.Sprintf("%s%s%s.gen.go", g.OutPath, string(os.PathSeparator), data.FileName), buf.Bytes())
 }
 
 // generateQueryUnitTestFile generate unit test file for query
@@ -450,8 +456,8 @@ func (g *Generator) generateQueryUnitTestFile(data *genInfo) (err error) {
 		}
 	}
 
-	defer g.info(fmt.Sprintf("generate unit test file: %s/%s.gen_test.go", g.OutPath, data.FileName))
-	return g.output(fmt.Sprintf("%s/%s.gen_test.go", g.OutPath, data.FileName), buf.Bytes())
+	defer g.info(fmt.Sprintf("generate unit test file: %s%s%s.gen_test.go", g.OutPath, string(os.PathSeparator), data.FileName))
+	return g.output(fmt.Sprintf("%s%s%s.gen_test.go", g.OutPath, string(os.PathSeparator), data.FileName), buf.Bytes())
 }
 
 // generateModelFile generate model structures and save to file
@@ -560,7 +566,7 @@ func (g *Generator) output(fileName string, content []byte) error {
 		}
 		return fmt.Errorf("cannot format file: %w", err)
 	}
-	return ioutil.WriteFile(fileName, result, 0640)
+	return os.WriteFile(fileName, result, 0640)
 }
 
 func (g *Generator) pushQueryStructMeta(meta *generate.QueryStructMeta) (*genInfo, error) {

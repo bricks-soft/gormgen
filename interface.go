@@ -87,6 +87,6 @@ type Dao interface {
 	Pluck(column field.Expr, dest interface{}) error
 	ScanRows(rows *sql.Rows, dest interface{}) error
 
-	WithSecCheckDisabled(disabled bool) Dao
 	AddError(err error) error
+	WithSecCheckDisabled(disabled bool) Dao
 }
