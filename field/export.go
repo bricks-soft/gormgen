@@ -32,6 +32,11 @@ func NewField(table, column string, opts ...Option) Field {
 	return Field{expr: expr{col: toColumn(table, column, opts...)}}
 }
 
+// NewFieldRaw create new raw field
+func NewFieldRaw(table, column string, opts ...Option) Field {
+	return Field{expr: expr{col: toColumnRaw(table, column, opts...)}}
+}
+
 // NewSerializer create new field2
 func NewSerializer(table, column string, opts ...Option) Serializer {
 	return Serializer{expr: expr{col: toColumn(table, column, opts...)}}
@@ -138,6 +143,14 @@ func toColumn(table, column string, opts ...Option) clause.Column {
 		col = opt(col)
 	}
 	return banColumnRaw(col)
+}
+
+func toColumnRaw(table, column string, opts ...Option) clause.Column {
+	col := clause.Column{Table: table, Name: column, Raw: true}
+	for _, opt := range opts {
+		col = opt(col)
+	}
+	return col
 }
 
 // ======================== boolean operate ========================

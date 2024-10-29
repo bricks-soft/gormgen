@@ -68,6 +68,10 @@ type expr struct {
 	buildOpts []BuildOpt
 }
 
+func NewExpr(col clause.Column, e clause.Expression, buildOpts ...BuildOpt) *expr {
+	return &expr{col: col, e: e, buildOpts: buildOpts}
+}
+
 func (e expr) BeCond() interface{} { return e.expression() }
 func (expr) CondError() error      { return nil }
 
