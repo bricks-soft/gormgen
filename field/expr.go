@@ -353,6 +353,10 @@ func (e expr) floor() expr {
 	return e.setE(clause.Expr{SQL: "FLOOR(?)", Vars: []interface{}{e.RawExpr()}})
 }
 
+func (e expr) round(digits int) expr {
+	return e.setE(clause.Expr{SQL: "ROUND(?, ?)", Vars: []interface{}{e.RawExpr(), digits}})
+}
+
 func (e expr) rightShift(value interface{}) expr {
 	if e.isPure() {
 		return e.setE(clause.Expr{SQL: "?>>?", Vars: []interface{}{e.col, value}})

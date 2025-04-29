@@ -95,6 +95,11 @@ func (field Float64) Floor() Int {
 	return Int{field.floor()}
 }
 
+// Round ...
+func (field Float64) Round(digits int) Float64 {
+	return Float64{field.round(digits)}
+}
+
 // Value set value
 func (field Float64) Value(value float64) AssignExpr {
 	return field.value(value)
@@ -219,6 +224,11 @@ func (field Float32) FloorDiv(value float32) Int {
 // Floor ...
 func (field Float32) Floor() Int {
 	return Int{field.floor()}
+}
+
+// Round ...
+func (field Float32) Round(digits int) Float32 {
+	return Float32{field.round(digits)}
 }
 
 // Value set value
